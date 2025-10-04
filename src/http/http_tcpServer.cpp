@@ -99,12 +99,34 @@ namespace http
                 exitWithError("Failed to read bytes from client socket connection");
             }
 
-            std::ostringstream ss;
-            ss << "------ Received Request from client ------\n\n";
-            log(ss.str());
+            std::string request(buffer);
+            log("------ Received Request from client ------\n" + request);
 
-            sendResponse();
+            std::string response;
 
+            if (request.find("GET /hello") == 0 || request.find("GET /hello ") != std::string::npos) {
+                std::string body = "{ \"message\": \"Hello, World!\" }";
+                response = "HTTP/1.1 200 OK\r\n"
+                        "Content-Type: application/json\r\n"
+                        "Content-Length: " + std::to_string(body.size()) + "\r\n"
+                        "\r\n" + body;
+            } 
+            else if (request.find("GET /time") == 0 || request.find("GET /time ") != std::string::npos) {
+                std::time_t now = std::time(nullptr);
+                std::string body = "{ \"time\": \"" + std::string(std::ctime(&now)) + "\" }";
+                response = "HTTP/1.1 200 OK\r\n"
+                        "Content-Type: application/json\r\n"
+                        "Content-Length: " + std::to_string(body.size()) + "\r\n"
+                        "\r\n" + body;
+            } 
+            else {
+                std::string body = "404 Not Found";
+                response = "HTTP/1.1 404 Not Found\r\n"
+                        "Content-Length: " + std::to_string(body.size()) + "\r\n"
+                        "\r\n" + body;
+            }
+
+            write(m_new_socket, response.c_str(), response.size());
             close(m_new_socket);
         }
         
